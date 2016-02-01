@@ -13,9 +13,10 @@ import Network.HTTP.Types.Method
 import System.Environment
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
+import Options
 
-days :: [Day]
-days = filter isWeekDay $ iterate (addDays 1) $ fromGregorian 2016 01 10
+daysFrom :: Day -> [Day]
+daysFrom = filter isWeekDay . iterate (addDays 1)
   where
   isWeekDay (ModifiedJulianDay n) = mod n 7 `elem` [0,1,2,5,6]
 
@@ -36,7 +37,7 @@ instance ToJSON TimePeriod where
     ]
 
 main :: IO ()
-main = do
+main = withOptions $ \Config{..} -> do
   password <- getEnv "HARVEST_PASSWORD"
   manager <- newManager tlsManagerSettings
 
@@ -50,7 +51,7 @@ main = do
             ]
         , method = methodPost })
 
-  forM_ (take 10 days) $ \day ->
+  forM_ (take cDayCount $ daysFrom cStartDate) $ \day ->
     forM_ [("09:00","12:30"),("13:00","17:30")] $ \(startTime, endTime) -> do
       let timePeriod = TimePeriod
             { startedAt = startTime
