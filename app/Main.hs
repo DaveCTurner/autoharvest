@@ -3,6 +3,7 @@
 
 module Main where
 
+import Control.Concurrent.Async
 import Control.Monad
 import Data.Aeson
 import Data.Maybe
@@ -57,9 +58,11 @@ main = withOptions $ \Config{..} -> do
             ]
         , method = methodPost })
 
-  forM_ (take cDayCount $ daysFrom cStartDate) $ \day ->
-    forM_ [("09:00","12:30"),("13:00","17:30")] $ \(startTime, endTime) -> do
-      let timePeriod = TimePeriod
+  asyncs <- mapM async
+    [ httpNoBody currentReq manager
+    | day <- take cDayCount $ daysFrom cStartDate
+    , (startTime, endTime) <- [("09:00","12:30"),("13:00","17:30")]
+    , let timePeriod = TimePeriod
             { startedAt = startTime
             , endedAt   = endTime
             , spentAt   = day
@@ -67,5 +70,6 @@ main = withOptions $ \Config{..} -> do
             , taskId    = cTaskId
             }
           currentReq = req { requestBody = RequestBodyLBS $ encode timePeriod }
+    ]
 
-      void $ httpNoBody currentReq manager
+  mapM_ waitCatch asyncs
