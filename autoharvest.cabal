@@ -18,6 +18,7 @@ executable autoharvest
   ghc-options:         -threaded -rtsopts -with-rtsopts=-N
   build-depends:       base
     , aeson
+    , bytestring
     , http-client
     , http-client-tls
     , http-types

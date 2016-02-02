@@ -11,6 +11,8 @@ import Data.Time
 data Config = Config
   { cStartDate :: Day
   , cDayCount  :: Int
+  , cProjectId :: Int
+  , cTaskId    :: Int
   } deriving (Show, Eq)
 
 optionsApplicative :: Parser Config
@@ -21,6 +23,8 @@ optionsApplicative = Config
   <*> option auto   (long "days"
                   <> metavar "DAYS"
                   <> help "Number of (work) days to fill in")
+  <*> option auto   (long "project-id" <> metavar "PROJECT-ID")
+  <*> option auto   (long "task-id" <> metavar "TASK-ID")
 
 optionsInfo :: ParserInfo Config
 optionsInfo

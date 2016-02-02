@@ -11,6 +11,7 @@ import Network.HTTP.Client
 import Network.HTTP.Client.TLS
 import Network.HTTP.Types.Method
 import System.Environment
+import qualified Data.ByteString as B
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import Options
@@ -22,8 +23,10 @@ daysFrom = filter isWeekDay . iterate (addDays 1)
 
 data TimePeriod = TimePeriod
   { startedAt :: String
-  , endedAt :: String
-  , spentAt :: Day
+  , endedAt   :: String
+  , spentAt   :: Day
+  , projectId :: Int
+  , taskId    :: Int
   }
 
 instance ToJSON TimePeriod where
@@ -31,18 +34,21 @@ instance ToJSON TimePeriod where
     [ "notes" .= ("" :: String)
     , "started_at" .= startedAt
     , "ended_at"   .= endedAt
-    , "project_id" .= (9547486 :: Int)
-    , "task_id"    .= (4210505 :: Int)
+    , "project_id" .= projectId
+    , "task_id"    .= taskId
     , "spent_at"   .= show spentAt
     ]
 
+getEnvBS :: String -> IO B.ByteString
+getEnvBS = fmap (T.encodeUtf8 . T.pack) . getEnv
+
 main :: IO ()
 main = withOptions $ \Config{..} -> do
-  password <- getEnv "HARVEST_PASSWORD"
+  username <- getEnvBS "HARVEST_USER"
+  password <- getEnvBS "HARVEST_PASSWORD"
   manager <- newManager tlsManagerSettings
 
-  let req = (applyBasicAuth "david.turner@tracsis.com"
-                            $ T.encodeUtf8 $ T.pack password)
+  let req = applyBasicAuth username password
             ((fromMaybe (error "could not make request")
              $ parseUrl "https://tracsis.harvestapp.com/daily/add")
         { requestHeaders =
@@ -57,6 +63,8 @@ main = withOptions $ \Config{..} -> do
             { startedAt = startTime
             , endedAt   = endTime
             , spentAt   = day
+            , projectId = cProjectId
+            , taskId    = cTaskId
             }
           currentReq = req { requestBody = RequestBodyLBS $ encode timePeriod }
 
